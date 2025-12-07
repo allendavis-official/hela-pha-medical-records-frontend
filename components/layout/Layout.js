@@ -26,6 +26,10 @@ export default function Layout({ children }) {
   const { user, logout } = useAuth();
   const router = useRouter();
 
+  // Debug: Check if profileImage is loaded
+  console.log("User data in Layout:", user);
+  console.log("Profile Image URL:", user?.profileImage);
+
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: FaHome },
     { name: "Patients", href: "/patients", icon: FaUsers },
@@ -70,17 +74,31 @@ export default function Layout({ children }) {
         </div>
 
         {/* User Info */}
+        {/* User Info with Profile Image */}
         <div className="px-6 py-4 bg-primary-900 border-b border-primary-700">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center">
-              {isAdmin ? <FaUserShield className="text-lg" /> : <FaUser />}
+            {/* Profile Image */}
+            <div className="w-10 h-10 rounded-full overflow-hidden bg-primary-600 flex-shrink-0">
+              {user?.profileImage ? (
+                <img
+                  src={user.profileImage}
+                  alt={`${user.firstName} ${user.lastName}`}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <FaUser className="text-white" />
+                </div>
+              )}
             </div>
-            <div>
-              <p className="font-medium">
+
+            {/* User Info */}
+            <div className="flex-1 min-w-0">
+              <p className="font-medium truncate">
                 {user?.firstName} {user?.lastName}
               </p>
-              <p className="text-xs text-primary-300 capitalize">
-                {user?.role?.name?.replace("_", " ")}
+              <p className="text-xs text-primary-300 capitalize truncate">
+                {user?.role?.name}
               </p>
             </div>
           </div>

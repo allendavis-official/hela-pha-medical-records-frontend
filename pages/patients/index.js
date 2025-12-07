@@ -11,6 +11,7 @@ import {
   FaEdit,
   FaMale,
   FaFemale,
+  FaUser,
 } from "react-icons/fa";
 import { format } from "date-fns";
 
@@ -25,6 +26,7 @@ function PatientsPage() {
 
   const handleSearch = (e) => {
     e.preventDefault();
+    setPage(1);
     mutate();
   };
 
@@ -99,6 +101,7 @@ function PatientsPage() {
                 <table className="table">
                   <thead>
                     <tr>
+                      <th>Photo</th>
                       <th>MRN</th>
                       <th>Patient Name</th>
                       <th>Sex</th>
@@ -118,6 +121,22 @@ function PatientsPage() {
 
                       return (
                         <tr key={patient.id}>
+                          <td>
+                            {/* Patient Photo */}
+                            <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                              {patient.profileImage ? (
+                                <img
+                                  src={patient.profileImage}
+                                  alt={`${patient.firstName} ${patient.lastName}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <FaUser className="text-gray-400" />
+                                </div>
+                              )}
+                            </div>
+                          </td>
                           <td>
                             <span className="font-mono text-sm font-semibold text-primary-600">
                               {patient.mrn}

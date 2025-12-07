@@ -14,6 +14,8 @@ import {
   FaCalendar,
   FaIdCard,
   FaUserFriends,
+  FaMale,
+  FaFemale,
 } from "react-icons/fa";
 import { format } from "date-fns";
 
@@ -59,19 +61,54 @@ function PatientDetailsPage() {
   return (
     <Layout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              {patient.firstName} {patient.middleName} {patient.lastName}
-            </h1>
-            <p className="text-gray-600 mt-1">
-              MRN:{" "}
-              <span className="font-mono font-semibold text-primary-600">
-                {patient.mrn}
-              </span>
-            </p>
+        {/* Header with Patient Photo */}
+        <div className="flex items-start justify-between">
+          <div className="flex items-start space-x-4">
+            {/* Patient Photo */}
+            <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 border-4 border-white shadow-lg">
+              {patient.profileImage ? (
+                <img
+                  src={patient.profileImage}
+                  alt={`${patient.firstName} ${patient.lastName}`}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary-400 to-primary-600">
+                  <FaUser className="text-4xl text-white" />
+                </div>
+              )}
+            </div>
+
+            {/* Patient Info */}
+            <div>
+              <div className="flex items-center space-x-3 mb-2">
+                <h1 className="text-3xl font-bold text-gray-900">
+                  {patient.firstName} {patient.middleName} {patient.lastName}
+                </h1>
+                {patient.sex === "male" ? (
+                  <FaMale className="text-2xl text-blue-500" />
+                ) : (
+                  <FaFemale className="text-2xl text-pink-500" />
+                )}
+              </div>
+              <div className="flex items-center space-x-4 text-gray-600">
+                <span className="flex items-center">
+                  <FaIdCard className="mr-2" />
+                  MRN:{" "}
+                  <span className="font-mono font-semibold text-primary-600 ml-1">
+                    {patient.mrn}
+                  </span>
+                </span>
+                {age && (
+                  <span className="flex items-center">
+                    <FaCalendar className="mr-2" />
+                    {age} years old
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
+
           <div className="flex space-x-3">
             <Link
               href={`/encounters/new?patientId=${patient.id}`}

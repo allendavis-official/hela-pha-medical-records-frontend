@@ -7,25 +7,62 @@ import api from "../../lib/api";
 import {
   FaPlus,
   FaSearch,
+  FaEye,
   FaEdit,
   FaUser,
-  FaCheckCircle,
-  FaTimesCircle,
+  FaTrash,
+  FaBan,
 } from "react-icons/fa";
-import { format } from "date-fns";
 
 function UsersPage() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState("");
+  const [deletingId, setDeletingId] = useState(null);
+  const [deactivatingId, setDeactivatingId] = useState(null);
 
-  const {
-    data: usersData,
-    error,
-    mutate,
-  } = useSWR("/users", () => api.getUsers());
+  const { data, error, mutate } = useSWR(`/users?search=${searchTerm}`, () =>
+    api.getUsers({ search: searchTerm })
+  );
 
-  const handleSearch = (e) => {
-    e.preventDefault();
+  const handleDeactivate = async (userId, userName) => {
+    if (
+      !confirm(
+        `Are you sure you want to deactivate ${userName}? The user will no longer be able to log in.`
+      )
+    ) {
+      return;
+    }
+
+    setDeactivatingId(userId);
+    try {
+      await api.deactivateUser(userId);
+      mutate(); // Refresh the list
+      alert("User deactivated successfully");
+    } catch (error) {
+      alert("Failed to deactivate user: " + error.message);
+    } finally {
+      setDeactivatingId(null);
+    }
+  };
+
+  const handleDelete = async (userId, userName) => {
+    if (
+      !confirm(
+        `⚠️ PERMANENTLY DELETE ${userName}?\n\nThis will:\n- Remove user from database\n- Cannot be undone\n- All audit logs will remain\n\nAre you absolutely sure?`
+      )
+    ) {
+      return;
+    }
+
+    setDeletingId(userId);
+    try {
+      await api.deleteUser(userId);
+      mutate(); // Refresh the list
+      alert("User deleted permanently");
+    } catch (error) {
+      alert("Failed to delete user: " + error.message);
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   if (error) {
@@ -36,47 +73,7 @@ function UsersPage() {
     );
   }
 
-  const allUsers = usersData?.data || [];
-
-  // Filter users
-  const filteredUsers = allUsers.filter((user) => {
-    const matchesSearch =
-      !searchTerm ||
-      user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesRole = !roleFilter || user.role?.name === roleFilter;
-
-    return matchesSearch && matchesRole;
-  });
-
-  // Get unique roles for filter
-  const roles = [...new Set(allUsers.map((u) => u.role?.name).filter(Boolean))];
-
-  const getRoleBadgeColor = (roleName) => {
-    switch (roleName) {
-      case "admin":
-        return "badge-danger";
-      case "clinician":
-        return "badge-success";
-      case "records_staff":
-        return "badge-info";
-      case "lab_tech":
-        return "badge-warning";
-      case "radiographer":
-        return "badge-warning";
-      default:
-        return "badge-info";
-    }
-  };
-
-  const getRoleDisplayName = (roleName) => {
-    return roleName
-      ?.split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
-  };
+  const users = data?.data || [];
 
   return (
     <Layout>
@@ -84,12 +81,11 @@ function UsersPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-              <FaUser className="mr-3 text-primary-600" />
+            <h1 className="text-3xl font-bold text-gray-900">
               User Management
             </h1>
             <p className="text-gray-600 mt-1">
-              Manage system users and access permissions
+              Manage system users and permissions
             </p>
           </div>
           <Link href="/users/new" className="btn btn-primary">
@@ -98,167 +94,144 @@ function UsersPage() {
           </Link>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="card">
-            <p className="text-sm text-gray-600 mb-1">Total Users</p>
-            <p className="text-3xl font-bold text-primary-600">
-              {allUsers.length}
-            </p>
-          </div>
-          <div className="card">
-            <p className="text-sm text-gray-600 mb-1">Active Users</p>
-            <p className="text-3xl font-bold text-green-600">
-              {allUsers.filter((u) => u.isActive).length}
-            </p>
-          </div>
-          <div className="card">
-            <p className="text-sm text-gray-600 mb-1">Clinicians</p>
-            <p className="text-3xl font-bold text-blue-600">
-              {allUsers.filter((u) => u.role?.name === "clinician").length}
-            </p>
-          </div>
-          <div className="card">
-            <p className="text-sm text-gray-600 mb-1">Administrators</p>
-            <p className="text-3xl font-bold text-red-600">
-              {allUsers.filter((u) => u.role?.name === "admin").length}
-            </p>
-          </div>
-        </div>
-
-        {/* Search & Filters */}
+        {/* Search Bar */}
         <div className="card">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-2">
-              <label className="label">Search Users</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaSearch className="text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Search by name or email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="input pl-10"
-                />
+          <div className="flex gap-4">
+            <div className="flex-1 relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FaSearch className="text-gray-400" />
               </div>
-            </div>
-            <div>
-              <label className="label">Filter by Role</label>
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                className="input"
-              >
-                <option value="">All Roles</option>
-                {roles.map((role) => (
-                  <option key={role} value={role}>
-                    {getRoleDisplayName(role)}
-                  </option>
-                ))}
-              </select>
+              <input
+                type="text"
+                placeholder="Search users by name or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="input pl-10"
+              />
             </div>
           </div>
         </div>
 
         {/* Users Table */}
         <div className="card">
-          {!usersData ? (
+          {!data ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
               <p className="mt-4 text-gray-600">Loading users...</p>
             </div>
-          ) : filteredUsers.length === 0 ? (
+          ) : users.length === 0 ? (
             <div className="text-center py-12">
-              <FaUser className="text-6xl text-gray-300 mx-auto mb-4" />
               <p className="text-gray-600">No users found</p>
-              <p className="text-sm text-gray-500 mt-2">
-                Try adjusting your search or filters
-              </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="table">
                 <thead>
                   <tr>
-                    <th>Status</th>
-                    <th>Name</th>
+                    <th>User</th>
                     <th>Email</th>
                     <th>Role</th>
                     <th>Phone</th>
-                    <th>Created</th>
-                    <th>Last Login</th>
+                    <th>Status</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.map((user) => (
+                  {users.map((user) => (
                     <tr key={user.id}>
                       <td>
-                        {user.isActive ? (
-                          <FaCheckCircle
-                            className="text-green-600 text-xl"
-                            title="Active"
-                          />
-                        ) : (
-                          <FaTimesCircle
-                            className="text-red-600 text-xl"
-                            title="Inactive"
-                          />
-                        )}
-                      </td>
-                      <td>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                            <span className="font-semibold text-primary-600">
-                              {user.firstName.charAt(0)}
-                              {user.lastName.charAt(0)}
-                            </span>
+                        <div className="flex items-center space-x-3">
+                          {/* Profile Image */}
+                          <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                            {user.profileImage ? (
+                              <img
+                                src={user.profileImage}
+                                alt={`${user.firstName} ${user.lastName}`}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <FaUser className="text-gray-400" />
+                              </div>
+                            )}
                           </div>
-                          <div>
-                            <p className="font-medium">
-                              {user.firstName} {user.lastName}
-                            </p>
-                          </div>
+
+                          {/* Name */}
+                          <span className="font-medium">
+                            {user.firstName} {user.lastName}
+                          </span>
                         </div>
                       </td>
+                      <td>{user.email}</td>
                       <td>
-                        <span className="text-sm">{user.email}</span>
-                      </td>
-                      <td>
-                        <span
-                          className={`badge ${getRoleBadgeColor(
-                            user.role?.name
-                          )}`}
-                        >
-                          {getRoleDisplayName(user.role?.name)}
+                        <span className="badge badge-info capitalize">
+                          {user.role.name}
                         </span>
                       </td>
+                      <td>{user.phone || "-"}</td>
                       <td>
-                        <span className="text-sm">{user.phone || "-"}</span>
-                      </td>
-                      <td>
-                        <span className="text-sm">
-                          {format(new Date(user.createdAt), "MMM d, yyyy")}
-                        </span>
-                      </td>
-                      <td>
-                        <span className="text-sm text-gray-600">
-                          {user.lastLogin
-                            ? format(new Date(user.lastLogin), "MMM d, yyyy")
-                            : "Never"}
-                        </span>
+                        {user.isActive ? (
+                          <span className="badge badge-success">Active</span>
+                        ) : (
+                          <span className="badge badge-danger">Inactive</span>
+                        )}
                       </td>
                       <td>
                         <div className="flex space-x-2">
                           <Link
-                            href={`/users/${user.id}/edit`}
+                            href={`/users/${user.id}`}
                             className="text-primary-600 hover:text-primary-800"
+                            title="View Details"
+                          >
+                            <FaEye />
+                          </Link>
+                          <Link
+                            href={`/users/${user.id}/edit`}
+                            className="text-gray-600 hover:text-gray-800"
                             title="Edit User"
                           >
                             <FaEdit />
                           </Link>
+
+                          {/* Deactivate Button */}
+                          {user.isActive && (
+                            <button
+                              onClick={() =>
+                                handleDeactivate(
+                                  user.id,
+                                  `${user.firstName} ${user.lastName}`
+                                )
+                              }
+                              disabled={deactivatingId === user.id}
+                              className="text-orange-600 hover:text-orange-800 disabled:opacity-50"
+                              title="Deactivate User"
+                            >
+                              {deactivatingId === user.id ? (
+                                <div className="animate-spin h-4 w-4 border-2 border-orange-600 border-t-transparent rounded-full"></div>
+                              ) : (
+                                <FaBan />
+                              )}
+                            </button>
+                          )}
+
+                          {/* Delete Button */}
+                          <button
+                            onClick={() =>
+                              handleDelete(
+                                user.id,
+                                `${user.firstName} ${user.lastName}`
+                              )
+                            }
+                            disabled={deletingId === user.id}
+                            className="text-red-600 hover:text-red-800 disabled:opacity-50"
+                            title="Delete User Permanently"
+                          >
+                            {deletingId === user.id ? (
+                              <div className="animate-spin h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full"></div>
+                            ) : (
+                              <FaTrash />
+                            )}
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -267,29 +240,6 @@ function UsersPage() {
               </table>
             </div>
           )}
-        </div>
-
-        {/* Role Summary */}
-        <div className="card">
-          <h2 className="text-xl font-bold mb-4">Users by Role</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {roles.map((role) => {
-              const count = allUsers.filter(
-                (u) => u.role?.name === role
-              ).length;
-              return (
-                <div
-                  key={role}
-                  className="text-center p-4 bg-gray-50 rounded-lg"
-                >
-                  <p className="text-2xl font-bold text-gray-900">{count}</p>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {getRoleDisplayName(role)}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
         </div>
       </div>
     </Layout>

@@ -2,13 +2,17 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import { withAuth } from "../../lib/auth";
 import Layout from "../../components/layout/Layout";
+import ImageUpload from "../../components/common/ImageUpload";
 import api from "../../lib/api";
 import { FaSave, FaTimes } from "react-icons/fa";
 
 function NewPatientPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [error, setError] = useState("");
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [formData, setFormData] = useState({
     firstName: "",
     middleName: "",
@@ -33,6 +37,17 @@ function NewPatientPage() {
     }));
   };
 
+  const handleImageSelect = (file) => {
+    setImageFile(file);
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -42,41 +57,37 @@ function NewPatientPage() {
       // Prepare data
       const submitData = { ...formData };
 
-      // STEP 1: Remove empty strings and convert to null
+      // Handle date of birth
+      if (submitData.dateOfBirth) {
+        submitData.ageEstimate = null;
+      } else if (submitData.ageEstimate) {
+        submitData.ageEstimate = parseInt(submitData.ageEstimate);
+        submitData.dateOfBirth = null;
+      }
+
+      // Remove empty strings
       Object.keys(submitData).forEach((key) => {
         if (submitData[key] === "") {
           submitData[key] = null;
         }
       });
 
-      // STEP 2: Handle date of birth/age estimate logic
-      if (submitData.dateOfBirth) {
-        // If date of birth is provided, remove age estimate entirely
-        delete submitData.ageEstimate;
-      } else if (submitData.ageEstimate) {
-        // If age estimate is provided, parse it and remove date of birth
-        submitData.ageEstimate = parseInt(submitData.ageEstimate);
-        delete submitData.dateOfBirth;
-      }
-
-      // STEP 3: Validate that at least one is provided
-      if (!submitData.dateOfBirth && !submitData.ageEstimate) {
-        setError("Please provide either Date of Birth or Age Estimate");
-        setLoading(false);
-        return;
-      }
-
-      // STEP 4: Remove all null values to avoid validation issues
-      Object.keys(submitData).forEach((key) => {
-        if (submitData[key] === null) {
-          delete submitData[key];
-        }
-      });
-
+      // Create patient
       const response = await api.createPatient(submitData);
+      const patientId = response.data.id;
+
+      // Upload image if selected
+      if (imageFile) {
+        try {
+          await api.uploadPatientImage(patientId, imageFile);
+        } catch (imgError) {
+          console.error("Image upload error:", imgError);
+          // Continue anyway - patient was created
+        }
+      }
 
       // Redirect to patient details
-      router.push(`/patients/${response.data.id}`);
+      router.push(`/patients/${patientId}`);
     } catch (err) {
       setError(err.message || "Failed to create patient");
       setLoading(false);
@@ -111,6 +122,20 @@ function NewPatientPage() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Patient Photo */}
+          <div className="card">
+            <h2 className="text-xl font-bold mb-4">Patient Photo (Optional)</h2>
+            <ImageUpload
+              currentImage={imagePreview}
+              onUpload={handleImageSelect}
+              loading={uploadingImage}
+              label="Upload patient photo"
+            />
+            <p className="text-sm text-gray-500 mt-2">
+              You can also add a photo later after registration
+            </p>
+          </div>
+
           {/* Personal Information */}
           <div className="card">
             <h2 className="text-xl font-bold mb-6">Personal Information</h2>
@@ -300,7 +325,7 @@ function NewPatientPage() {
               disabled={loading}
             >
               <FaSave className="inline mr-2" />
-              {loading ? "Saving..." : "Register Patient"}
+              {loading ? "Registering..." : "Register Patient"}
             </button>
           </div>
         </form>

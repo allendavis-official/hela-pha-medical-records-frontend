@@ -2,16 +2,17 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { withAuth } from "../../../lib/auth";
 import Layout from "../../../components/layout/Layout";
+import ImageUpload from "../../../components/common/ImageUpload";
 import useSWR from "swr";
 import api from "../../../lib/api";
 import { FaSave, FaTimes } from "react-icons/fa";
-import { format } from "date-fns";
 
 function EditPatientPage() {
   const router = useRouter();
   const { id } = router.query;
 
   const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     firstName: "",
@@ -29,11 +30,12 @@ function EditPatientPage() {
     nextOfKinRelation: "",
   });
 
-  // Load patient data
-  const { data: patientData, error: fetchError } = useSWR(
-    id ? `/patients/${id}` : null,
-    () => api.getPatientById(id)
-  );
+  // Fetch patient data
+  const {
+    data: patientData,
+    error: patientError,
+    mutate,
+  } = useSWR(id ? `/patients/${id}` : null, () => api.getPatientById(id));
 
   const patient = patientData?.data;
 
@@ -46,7 +48,7 @@ function EditPatientPage() {
         lastName: patient.lastName || "",
         sex: patient.sex || "male",
         dateOfBirth: patient.dateOfBirth
-          ? format(new Date(patient.dateOfBirth), "yyyy-MM-dd")
+          ? patient.dateOfBirth.split("T")[0]
           : "",
         ageEstimate: patient.ageEstimate || "",
         phoneNumber: patient.phoneNumber || "",
@@ -60,10 +62,78 @@ function EditPatientPage() {
     }
   }, [patient]);
 
-  if (fetchError) {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleImageUpload = async (file) => {
+    setUploadingImage(true);
+    try {
+      const response = await api.uploadPatientImage(id, file);
+
+      // Update the image in the UI
+      if (response?.data?.imageUrl) {
+        mutate(
+          {
+            ...patientData,
+            data: {
+              ...patientData.data,
+              profileImage: response.data.imageUrl,
+            },
+          },
+          false
+        );
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Failed to upload image: " + error.message);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      // Prepare data
+      const submitData = { ...formData };
+
+      // Handle date of birth
+      if (submitData.dateOfBirth) {
+        submitData.ageEstimate = null;
+      } else if (submitData.ageEstimate) {
+        submitData.ageEstimate = parseInt(submitData.ageEstimate);
+        submitData.dateOfBirth = null;
+      }
+
+      // Remove empty strings
+      Object.keys(submitData).forEach((key) => {
+        if (submitData[key] === "") {
+          submitData[key] = null;
+        }
+      });
+
+      await api.updatePatient(id, submitData);
+      router.push(`/patients/${id}`);
+    } catch (err) {
+      setError(err.message || "Failed to update patient");
+      setLoading(false);
+    }
+  };
+
+  if (patientError) {
     return (
       <Layout>
-        <div className="text-red-600">Failed to load patient</div>
+        <div className="card">
+          <div className="text-red-600">Failed to load patient data</div>
+        </div>
       </Layout>
     );
   }
@@ -79,47 +149,6 @@ function EditPatientPage() {
     );
   }
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-
-    try {
-      const submitData = { ...formData };
-
-      // Handle date of birth
-      if (submitData.dateOfBirth) {
-        delete submitData.ageEstimate;
-      } else if (submitData.ageEstimate) {
-        submitData.ageEstimate = parseInt(submitData.ageEstimate);
-        delete submitData.dateOfBirth;
-      }
-
-      // Remove all null/empty fields
-      Object.keys(submitData).forEach((key) => {
-        if (submitData[key] === "" || submitData[key] === null) {
-          delete submitData[key];
-        }
-      });
-
-      await api.updatePatient(id, submitData);
-
-      // Redirect to patient details
-      router.push(`/patients/${id}`);
-    } catch (err) {
-      setError(err.message || "Failed to update patient");
-      setLoading(false);
-    }
-  };
-
   return (
     <Layout>
       <div className="max-w-4xl mx-auto space-y-6">
@@ -128,14 +157,10 @@ function EditPatientPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Edit Patient</h1>
             <p className="text-gray-600 mt-1">
-              MRN:{" "}
-              <span className="font-mono font-semibold">{patient.mrn}</span>
+              Update patient information and photo
             </p>
           </div>
-          <button
-            onClick={() => router.push(`/patients/${id}`)}
-            className="btn btn-secondary"
-          >
+          <button onClick={() => router.back()} className="btn btn-secondary">
             <FaTimes className="inline mr-2" />
             Cancel
           </button>
@@ -148,8 +173,18 @@ function EditPatientPage() {
           </div>
         )}
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Patient Photo */}
+          <div className="card">
+            <h2 className="text-xl font-bold mb-4">Patient Photo</h2>
+            <ImageUpload
+              currentImage={patient.profileImage}
+              onUpload={handleImageUpload}
+              loading={uploadingImage}
+              label="Patient Photo"
+            />
+          </div>
+
           {/* Personal Information */}
           <div className="card">
             <h2 className="text-xl font-bold mb-6">Personal Information</h2>
@@ -327,7 +362,7 @@ function EditPatientPage() {
           <div className="flex justify-end space-x-4">
             <button
               type="button"
-              onClick={() => router.push(`/patients/${id}`)}
+              onClick={() => router.back()}
               className="btn btn-secondary"
               disabled={loading}
             >
@@ -339,7 +374,7 @@ function EditPatientPage() {
               disabled={loading}
             >
               <FaSave className="inline mr-2" />
-              {loading ? "Saving..." : "Save Changes"}
+              {loading ? "Updating..." : "Update Patient"}
             </button>
           </div>
         </form>
