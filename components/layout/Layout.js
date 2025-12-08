@@ -26,10 +26,6 @@ export default function Layout({ children }) {
   const { user, logout } = useAuth();
   const router = useRouter();
 
-  // Debug: Check if profileImage is loaded
-  console.log("User data in Layout:", user);
-  console.log("Profile Image URL:", user?.profileImage);
-
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: FaHome },
     { name: "Patients", href: "/patients", icon: FaUsers },
@@ -75,34 +71,36 @@ export default function Layout({ children }) {
 
         {/* User Info */}
         {/* User Info with Profile Image */}
-        <div className="px-6 py-4 bg-primary-900 border-b border-primary-700">
-          <div className="flex items-center space-x-3">
-            {/* Profile Image */}
-            <div className="w-10 h-10 rounded-full overflow-hidden bg-primary-600 flex-shrink-0">
-              {user?.profileImage ? (
-                <img
-                  src={user.profileImage}
-                  alt={`${user.firstName} ${user.lastName}`}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <FaUser className="text-white" />
-                </div>
-              )}
-            </div>
+        <Link href="/profile">
+          <div className="px-6 py-4 bg-primary-900 border-b border-primary-700 cursor-pointer hover:bg-primary-800 transition-colors">
+            <div className="flex items-center space-x-3">
+              {/* Profile Image */}
+              <div className="w-10 h-10 rounded-full overflow-hidden bg-primary-600 flex-shrink-0">
+                {user?.profileImage ? (
+                  <img
+                    src={user.profileImage}
+                    alt={`${user.firstName} ${user.lastName}`}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <FaUser className="text-white" />
+                  </div>
+                )}
+              </div>
 
-            {/* User Info */}
-            <div className="flex-1 min-w-0">
-              <p className="font-medium truncate">
-                {user?.firstName} {user?.lastName}
-              </p>
-              <p className="text-xs text-primary-300 capitalize truncate">
-                {user?.role?.name}
-              </p>
+              {/* User Info */}
+              <div className="flex-1 min-w-0">
+                <p className="font-medium truncate">
+                  {user?.firstName} {user?.lastName}
+                </p>
+                <p className="text-xs text-primary-300 capitalize truncate">
+                  {user?.position || user?.role?.name}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* Navigation */}
         <nav className="px-4 py-6 space-y-1 overflow-y-auto h-[calc(100vh-240px)]">

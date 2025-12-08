@@ -180,15 +180,31 @@ function PatientDetailsPage() {
                     {patient.address || "Not provided"}
                   </p>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-600">City</p>
-                    <p className="font-medium">{patient.city || "-"}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">County</p>
-                    <p className="font-medium">{patient.county || "-"}</p>
-                  </div>
+              </div>
+            </div>
+
+            {/* Location Information - UPDATED */}
+            <div className="card">
+              <h2 className="text-xl font-bold mb-4 flex items-center">
+                <FaMapMarkerAlt className="mr-2 text-primary-600" />
+                Location Information
+              </h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600">City</p>
+                  <p className="font-medium">{patient.city || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Town/Village</p>
+                  <p className="font-medium">{patient.town || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">District</p>
+                  <p className="font-medium">{patient.district || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Province</p>
+                  <p className="font-medium">{patient.province || "-"}</p>
                 </div>
               </div>
             </div>

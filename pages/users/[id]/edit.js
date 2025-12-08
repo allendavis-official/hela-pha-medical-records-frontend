@@ -18,6 +18,7 @@ function EditUserPage() {
     firstName: "",
     lastName: "",
     phone: "",
+    position: "",
     roleId: "",
     isActive: true,
   });
@@ -205,6 +206,18 @@ function EditUserPage() {
                   onChange={handleChange}
                   className="input"
                   placeholder="+231-777-123-4567"
+                />
+              </div>
+
+              <div>
+                <label className="label">Position/Title</label>
+                <input
+                  type="text"
+                  name="position"
+                  value={formData.position}
+                  onChange={handleChange}
+                  className="input"
+                  placeholder="e.g., Head Nurse, Senior Doctor"
                 />
               </div>
 

@@ -23,7 +23,9 @@ function NewPatientPage() {
     phoneNumber: "",
     address: "",
     city: "",
-    county: "",
+    town: "",
+    district: "",
+    province: "",
     nextOfKinName: "",
     nextOfKinPhone: "",
     nextOfKinRelation: "",
@@ -218,9 +220,11 @@ function NewPatientPage() {
             </div>
           </div>
 
-          {/* Contact Information */}
+          {/* Contact & Location Information */}
           <div className="card">
-            <h2 className="text-xl font-bold mb-6">Contact Information</h2>
+            <h2 className="text-xl font-bold mb-6">
+              Contact & Location Information
+            </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -235,19 +239,6 @@ function NewPatientPage() {
                 />
               </div>
               <div>
-                <label className="label">City</label>
-                <input
-                  type="text"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleChange}
-                  className="input"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-              <div>
                 <label className="label">Address</label>
                 <input
                   type="text"
@@ -257,14 +248,54 @@ function NewPatientPage() {
                   className="input"
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
               <div>
-                <label className="label">County</label>
+                <label className="label">City</label>
                 <input
                   type="text"
-                  name="county"
-                  value={formData.county}
+                  name="city"
+                  value={formData.city}
                   onChange={handleChange}
                   className="input"
+                  placeholder="e.g., Port Moresby"
+                />
+              </div>
+              <div>
+                <label className="label">Town/Village</label>
+                <input
+                  type="text"
+                  name="town"
+                  value={formData.town}
+                  onChange={handleChange}
+                  className="input"
+                  placeholder="e.g., Lae"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <div>
+                <label className="label">District</label>
+                <input
+                  type="text"
+                  name="district"
+                  value={formData.district}
+                  onChange={handleChange}
+                  className="input"
+                  placeholder="Abau District"
+                />
+              </div>
+              <div>
+                <label className="label">Province</label>
+                <input
+                  type="text"
+                  name="province"
+                  value={formData.province}
+                  onChange={handleChange}
+                  className="input"
+                  placeholder="e.g., Morobe Province"
                 />
               </div>
             </div>
