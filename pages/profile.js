@@ -15,8 +15,10 @@ function ProfilePage() {
   const [showPasswordForm, setShowPasswordForm] = useState(false);
 
   // Fetch full user data
-  const { data: userData, mutate } = useSWR("/users/me", () =>
-    api.getCurrentUserProfile()
+  // Use /me endpoint
+  const { data: userData, mutate } = useSWR(
+    currentUser ? "/users/me" : null,
+    () => api.getCurrentUserProfile()
   );
 
   const user = userData?.data;
@@ -67,7 +69,7 @@ function ProfilePage() {
   const handleImageUpload = async (file) => {
     setUploadingImage(true);
     try {
-      const response = await api.uploadUserImage(currentUser.id, file);
+      const response = await api.uploadOwnProfileImage(file);
 
       if (response?.data?.imageUrl) {
         mutate(
@@ -97,7 +99,7 @@ function ProfilePage() {
     setLoading(true);
 
     try {
-      await api.updateUser(currentUser.id, formData);
+      await api.updateOwnProfile(formData);
       mutate();
       setSuccess("Profile updated successfully!");
 
