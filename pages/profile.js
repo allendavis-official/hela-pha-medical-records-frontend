@@ -7,7 +7,7 @@ import api from "../lib/api";
 import { FaSave, FaLock, FaUser } from "react-icons/fa";
 
 function ProfilePage() {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, reloadUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [error, setError] = useState("");
@@ -72,6 +72,9 @@ function ProfilePage() {
       const response = await api.uploadOwnProfileImage(file);
 
       if (response?.data?.imageUrl) {
+        setSuccess("Profile image updated successfully!");
+
+        // Update local data
         mutate(
           {
             ...userData,
@@ -82,7 +85,18 @@ function ProfilePage() {
           },
           false
         );
-        setSuccess("Profile image updated successfully!");
+
+        // Dispatch custom event with updated image
+        const updatedUser = {
+          ...user,
+          profileImage: response.data.imageUrl,
+        };
+
+        window.dispatchEvent(
+          new CustomEvent("profileUpdated", {
+            detail: updatedUser,
+          })
+        );
       }
     } catch (error) {
       console.error("Upload error:", error);
@@ -99,13 +113,37 @@ function ProfilePage() {
     setLoading(true);
 
     try {
-      await api.updateOwnProfile(formData);
-      mutate();
-      setSuccess("Profile updated successfully!");
+      const emailChanged = formData.email !== user.email;
 
-      // Reload auth context if email changed
-      if (formData.email !== user.email) {
-        window.location.reload();
+      const response = await api.updateOwnProfile(formData);
+
+      if (emailChanged) {
+        setSuccess("Email updated! Please login again with your new email.");
+        setTimeout(() => {
+          localStorage.removeItem("accessToken");
+          window.location.href = "/login";
+        }, 2000);
+      } else {
+        setSuccess("Profile updated successfully!");
+
+        // Dispatch custom event with updated user data
+        const updatedUser = {
+          ...user,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phone: formData.phone,
+          position: formData.position,
+        };
+
+        window.dispatchEvent(
+          new CustomEvent("profileUpdated", {
+            detail: updatedUser,
+          })
+        );
+
+        // Also update local state
+        mutate();
       }
     } catch (err) {
       setError(err.message || "Failed to update profile");
