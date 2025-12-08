@@ -15,9 +15,8 @@ function ProfilePage() {
   const [showPasswordForm, setShowPasswordForm] = useState(false);
 
   // Fetch full user data
-  const { data: userData, mutate } = useSWR(
-    currentUser ? `/users/${currentUser.id}` : null,
-    () => api.getUserById(currentUser.id)
+  const { data: userData, mutate } = useSWR("/users/me", () =>
+    api.getCurrentUserProfile()
   );
 
   const user = userData?.data;
