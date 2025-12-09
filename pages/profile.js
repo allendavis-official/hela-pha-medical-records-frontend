@@ -4,10 +4,10 @@ import Layout from "../components/layout/Layout";
 import ImageUpload from "../components/common/ImageUpload";
 import useSWR from "swr";
 import api from "../lib/api";
-import { FaSave, FaLock, FaUser } from "react-icons/fa";
+import { FaLock, FaUser } from "react-icons/fa";
 
 function ProfilePage() {
-  const { user: currentUser, reloadUser } = useAuth();
+  const { user: currentUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [error, setError] = useState("");
@@ -15,7 +15,6 @@ function ProfilePage() {
   const [showPasswordForm, setShowPasswordForm] = useState(false);
 
   // Fetch full user data
-  // Use /me endpoint
   const { data: userData, mutate } = useSWR(
     currentUser ? "/users/me" : null,
     () => api.getCurrentUserProfile()
@@ -23,40 +22,11 @@ function ProfilePage() {
 
   const user = userData?.data;
 
-  const [formData, setFormData] = useState({
-    firstName: user?.firstName || "",
-    lastName: user?.lastName || "",
-    phone: user?.phone || "",
-    email: user?.email || "",
-    position: user?.position || "",
-  });
-
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
-
-  // Update formData when user data loads
-  useState(() => {
-    if (user) {
-      setFormData({
-        firstName: user.firstName || "",
-        lastName: user.lastName || "",
-        phone: user.phone || "",
-        email: user.email || "",
-        position: user.position || "",
-      });
-    }
-  }, [user]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
 
   const handlePasswordChange = (e) => {
     const { name, value } = e.target;
@@ -68,6 +38,8 @@ function ProfilePage() {
 
   const handleImageUpload = async (file) => {
     setUploadingImage(true);
+    setError("");
+    setSuccess("");
     try {
       const response = await api.uploadOwnProfileImage(file);
 
@@ -103,52 +75,6 @@ function ProfilePage() {
       setError("Failed to upload image: " + error.message);
     } finally {
       setUploadingImage(false);
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-    setLoading(true);
-
-    try {
-      const emailChanged = formData.email !== user.email;
-
-      const response = await api.updateOwnProfile(formData);
-
-      if (emailChanged) {
-        setSuccess("Email updated! Please login again with your new email.");
-        setTimeout(() => {
-          localStorage.removeItem("accessToken");
-          window.location.href = "/login";
-        }, 2000);
-      } else {
-        setSuccess("Profile updated successfully!");
-
-        // Dispatch custom event with updated user data
-        const updatedUser = {
-          ...user,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          phone: formData.phone,
-          position: formData.position,
-        };
-
-        window.dispatchEvent(
-          new CustomEvent("profileUpdated", {
-            detail: updatedUser,
-          })
-        );
-
-        // Also update local state
-        mutate();
-      }
-    } catch (err) {
-      setError(err.message || "Failed to update profile");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -206,7 +132,7 @@ function ProfilePage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
           <p className="text-gray-600 mt-1">
-            Manage your account settings and profile information
+            Update your profile image and password
           </p>
         </div>
 
@@ -236,103 +162,38 @@ function ProfilePage() {
           />
         </div>
 
-        {/* Profile Information */}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="card">
-            <h2 className="text-xl font-bold mb-6">Personal Information</h2>
+        {/* Read-Only Profile Information */}
+        <div className="card bg-gray-50">
+          <h2 className="text-xl font-bold mb-4">Profile Information</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            Contact an administrator to update your profile information.
+          </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="label">First Name *</label>
-                <input
-                  type="text"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  className="input"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="label">Last Name *</label>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  className="input"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="label">Email Address *</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="input"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  You'll be logged out if you change your email
-                </p>
-              </div>
-
-              <div>
-                <label className="label">Phone</label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="input"
-                  placeholder="+231-777-123-4567"
-                />
-              </div>
-
-              <div>
-                <label className="label">Position/Title</label>
-                <input
-                  type="text"
-                  name="position"
-                  value={formData.position}
-                  onChange={handleChange}
-                  className="input"
-                  placeholder="e.g., Head Nurse, Senior Doctor"
-                />
-              </div>
-
-              <div>
-                <label className="label">Role</label>
-                <input
-                  type="text"
-                  value={user.role?.name || ""}
-                  className="input bg-gray-100 cursor-not-allowed capitalize"
-                  disabled
-                  readOnly
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Contact admin to change your role
-                </p>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm text-gray-600">Name</p>
+              <p className="font-medium">
+                {user.firstName} {user.lastName}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Email</p>
+              <p className="font-medium">{user.email}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Phone</p>
+              <p className="font-medium">{user.phone || "Not set"}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Position</p>
+              <p className="font-medium">{user.position || "Not set"}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Role</p>
+              <p className="font-medium capitalize">{user.role?.name}</p>
             </div>
           </div>
-
-          {/* Submit Button */}
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={loading}
-            >
-              <FaSave className="inline mr-2" />
-              {loading ? "Saving..." : "Save Changes"}
-            </button>
-          </div>
-        </form>
+        </div>
 
         {/* Password Change Section */}
         <div className="card">

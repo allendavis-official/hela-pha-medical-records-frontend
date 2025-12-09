@@ -12,12 +12,15 @@ import {
   FaMale,
   FaFemale,
   FaUser,
+  FaTrash,
+  FaArchive,
 } from "react-icons/fa";
 import { format } from "date-fns";
 
 function PatientsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
+  const [deletingId, setDeletingId] = useState(null);
 
   const { data, error, mutate } = useSWR(
     `/patients?search=${searchTerm}&page=${page}&limit=20`,
@@ -28,6 +31,48 @@ function PatientsPage() {
     e.preventDefault();
     setPage(1);
     mutate();
+  };
+
+  const handleDelete = async (patientId, patientName) => {
+    if (
+      !confirm(
+        `⚠️ DELETE ${patientName}?\n\nThis will permanently remove this patient from the system.\n\nAre you sure?`
+      )
+    ) {
+      return;
+    }
+
+    setDeletingId(patientId);
+    try {
+      await api.deletePatient(patientId);
+      mutate(); // Refresh the list
+      alert("Patient deleted successfully");
+    } catch (error) {
+      alert("Failed to delete patient: " + error.message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleArchive = async (patientId, patientName) => {
+    if (
+      !confirm(
+        `Archive ${patientName}?\n\nThe patient will be hidden from the list but can be restored later.`
+      )
+    ) {
+      return;
+    }
+
+    setDeletingId(patientId);
+    try {
+      await api.archivePatient(patientId);
+      mutate(); // Refresh the list
+      alert("Patient archived successfully");
+    } catch (error) {
+      alert("Failed to archive patient: " + error.message);
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   if (error) {
@@ -180,6 +225,41 @@ function PatientsPage() {
                               >
                                 <FaEdit />
                               </Link>
+                              <button
+                                onClick={() =>
+                                  handleDelete(
+                                    patient.id,
+                                    `${patient.firstName} ${patient.lastName}`
+                                  )
+                                }
+                                disabled={deletingId === patient.id}
+                                className="text-red-600 hover:text-red-800 disabled:opacity-50"
+                                title="Delete Patient"
+                              >
+                                {deletingId === patient.id ? (
+                                  <div className="animate-spin h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full"></div>
+                                ) : (
+                                  <FaTrash />
+                                )}
+                              </button>
+                              {/* Archive Button */}
+                              <button
+                                onClick={() =>
+                                  handleArchive(
+                                    patient.id,
+                                    `${patient.firstName} ${patient.lastName}`
+                                  )
+                                }
+                                disabled={deletingId === patient.id}
+                                className="text-orange-600 hover:text-orange-800 disabled:opacity-50"
+                                title="Archive Patient"
+                              >
+                                {deletingId === patient.id ? (
+                                  <div className="animate-spin h-4 w-4 border-2 border-orange-600 border-t-transparent rounded-full"></div>
+                                ) : (
+                                  <FaArchive />
+                                )}
+                              </button>
                             </div>
                           </td>
                         </tr>

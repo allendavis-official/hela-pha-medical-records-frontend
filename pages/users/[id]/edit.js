@@ -17,6 +17,7 @@ function EditUserPage() {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
+    email: "",
     phone: "",
     position: "",
     roleId: "",
@@ -42,7 +43,9 @@ function EditUserPage() {
       setFormData({
         firstName: user.firstName || "",
         lastName: user.lastName || "",
+        email: user.email || "",
         phone: user.phone || "",
+        position: user.position || "",
         roleId: user.roleId || "",
         isActive: user.isActive !== undefined ? user.isActive : true,
       });
@@ -184,16 +187,17 @@ function EditUserPage() {
               </div>
 
               <div>
-                <label className="label">Email</label>
+                <label className="label">Email Address *</label>
                 <input
                   type="email"
-                  value={user.email}
-                  className="input bg-gray-100 cursor-not-allowed"
-                  disabled
-                  readOnly
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="input"
+                  required
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Email cannot be changed
+                  User will need to login with the new email if changed
                 </p>
               </div>
 
