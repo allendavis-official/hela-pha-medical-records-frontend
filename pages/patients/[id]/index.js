@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { withAuth } from "../../../lib/auth";
 import Layout from "../../../components/layout/Layout";
+import ImageModal from "../../../components/common/ImageModal";
 import useSWR from "swr";
 import api from "../../../lib/api";
 import {
@@ -14,14 +16,13 @@ import {
   FaCalendar,
   FaIdCard,
   FaUserFriends,
-  FaMale,
-  FaFemale,
 } from "react-icons/fa";
 import { format } from "date-fns";
 
 function PatientDetailsPage() {
   const router = useRouter();
   const { id } = router.query;
+  const [showImageModal, setShowImageModal] = useState(false);
 
   const { data, error } = useSWR(id ? `/patients/${id}` : null, () =>
     api.getPatientById(id)
@@ -61,50 +62,52 @@ function PatientDetailsPage() {
   return (
     <Layout>
       <div className="space-y-6">
-        {/* Header with Patient Photo */}
+        {/* Header with Profile Image */}
         <div className="flex items-start justify-between">
-          <div className="flex items-start space-x-4">
-            {/* Patient Photo */}
-            <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 border-4 border-white shadow-lg">
-              {patient.profileImage ? (
-                <img
-                  src={patient.profileImage}
-                  alt={`${patient.firstName} ${patient.lastName}`}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary-400 to-primary-600">
-                  <FaUser className="text-4xl text-white" />
-                </div>
+          <div className="flex items-start space-x-6">
+            {/* Clickable Profile Image */}
+            <div
+              className="flex-shrink-0 cursor-pointer group"
+              onClick={() => setShowImageModal(true)}
+            >
+              <div className="w-32 h-32 rounded-lg overflow-hidden bg-gray-200 shadow-lg group-hover:shadow-xl transition-shadow">
+                {patient.profileImage ? (
+                  <img
+                    src={patient.profileImage}
+                    alt={`${patient.firstName} ${patient.lastName}`}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <FaUser className="text-6xl text-gray-400" />
+                  </div>
+                )}
+              </div>
+              {patient.profileImage && (
+                <p className="text-xs text-center text-gray-500 mt-2">
+                  Click to enlarge
+                </p>
               )}
             </div>
 
             {/* Patient Info */}
             <div>
-              <div className="flex items-center space-x-3 mb-2">
-                <h1 className="text-3xl font-bold text-gray-900">
-                  {patient.firstName} {patient.middleName} {patient.lastName}
-                </h1>
-                {patient.sex === "male" ? (
-                  <FaMale className="text-2xl text-blue-500" />
-                ) : (
-                  <FaFemale className="text-2xl text-pink-500" />
-                )}
-              </div>
-              <div className="flex items-center space-x-4 text-gray-600">
-                <span className="flex items-center">
-                  <FaIdCard className="mr-2" />
-                  MRN:{" "}
-                  <span className="font-mono font-semibold text-primary-600 ml-1">
-                    {patient.mrn}
-                  </span>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {patient.firstName} {patient.middleName} {patient.lastName}
+              </h1>
+              <p className="text-gray-600 mt-1">
+                MRN:{" "}
+                <span className="font-mono font-semibold text-primary-600">
+                  {patient.mrn}
                 </span>
-                {age && (
-                  <span className="flex items-center">
-                    <FaCalendar className="mr-2" />
-                    {age} years old
-                  </span>
-                )}
+              </p>
+              <div className="flex items-center space-x-4 mt-2">
+                <span className="badge badge-info capitalize">
+                  {patient.sex}
+                </span>
+                <span className="text-gray-600">
+                  {age ? `${age} years old` : "Age unknown"}
+                </span>
               </div>
             </div>
           </div>
@@ -183,7 +186,7 @@ function PatientDetailsPage() {
               </div>
             </div>
 
-            {/* Location Information - UPDATED */}
+            {/* Location Information */}
             <div className="card">
               <h2 className="text-xl font-bold mb-4 flex items-center">
                 <FaMapMarkerAlt className="mr-2 text-primary-600" />
@@ -405,6 +408,16 @@ function PatientDetailsPage() {
           </div>
         </div>
       </div>
+
+      {/* Image Modal */}
+      {patient.profileImage && (
+        <ImageModal
+          isOpen={showImageModal}
+          onClose={() => setShowImageModal(false)}
+          imageUrl={patient.profileImage}
+          name={`${patient.firstName} ${patient.lastName}`}
+        />
+      )}
     </Layout>
   );
 }
