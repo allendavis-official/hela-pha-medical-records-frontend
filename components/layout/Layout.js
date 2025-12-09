@@ -2,6 +2,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useAuth } from "../../lib/auth";
+import useSWR from "swr";
+import api from "../../lib/api";
 import {
   FaHome,
   FaUsers,
@@ -18,7 +20,7 @@ import {
   FaHospital,
   FaUser,
   FaUserCog,
-  FaUserShield,
+  FaEnvelope,
 } from "react-icons/fa";
 
 export default function Layout({ children }) {
@@ -26,10 +28,28 @@ export default function Layout({ children }) {
   const { user, logout } = useAuth();
   const router = useRouter();
 
+  // Fetch unread message count
+  const { data: unreadData } = useSWR(
+    "/messages/unread-count",
+    () => api.getUnreadCount(),
+    {
+      refreshInterval: 30000, // Poll every 30 seconds
+      revalidateOnFocus: true,
+    }
+  );
+
+  const unreadCount = unreadData?.data?.count || 0;
+
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: FaHome },
     { name: "Patients", href: "/patients", icon: FaUsers },
     { name: "Encounters", href: "/encounters", icon: FaStethoscope },
+    {
+      name: "Messages",
+      href: "/messages",
+      icon: FaEnvelope,
+      badge: unreadCount > 0 ? unreadCount : null,
+    },
     { name: "Clinical Notes", href: "/clinical-notes", icon: FaNotesMedical },
     { name: "Lab Orders", href: "/orders/lab", icon: FaFlask },
     { name: "Radiology", href: "/orders/radiology", icon: FaXRay },
@@ -69,7 +89,6 @@ export default function Layout({ children }) {
           </button>
         </div>
 
-        {/* User Info */}
         {/* User Info with Profile Image */}
         <Link href="/profile">
           <div className="px-6 py-4 bg-primary-900 border-b border-primary-700 cursor-pointer hover:bg-primary-800 transition-colors">
@@ -113,14 +132,21 @@ export default function Layout({ children }) {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                className={`flex items-center justify-between px-4 py-3 rounded-lg transition-colors ${
                   isActive
                     ? "bg-primary-700 text-white"
                     : "text-primary-100 hover:bg-primary-700 hover:text-white"
                 }`}
               >
-                <item.icon className="text-lg" />
-                <span>{item.name}</span>
+                <div className="flex items-center space-x-3">
+                  <item.icon className="text-lg" />
+                  <span>{item.name}</span>
+                </div>
+                {item.badge && (
+                  <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full min-w-[20px] text-center">
+                    {item.badge > 99 ? "99+" : item.badge}
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -184,6 +210,16 @@ export default function Layout({ children }) {
           </button>
 
           <div className="flex items-center space-x-4">
+            {/* Messages Icon with Badge */}
+            <Link href="/messages" className="relative">
+              <FaEnvelope className="text-xl text-gray-600 hover:text-primary-600 transition-colors" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </Link>
+
             <span className="text-sm text-gray-600">
               {new Date().toLocaleDateString("en-US", {
                 weekday: "long",
