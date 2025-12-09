@@ -82,3 +82,195 @@
     @apply bg-gray-50;
   }
 }
+
+/* Print Styles - Add to globals.css */
+
+/* Print Container */
+.print-container {
+  display: none;
+}
+
+@media print {
+  /* Hide everything except print content */
+  body * {
+    visibility: hidden;
+  }
+
+  .print-container,
+  .print-container * {
+    visibility: visible;
+  }
+
+  .print-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    display: block;
+    padding: 20px;
+    font-family: "Arial", sans-serif;
+    color: #000;
+    background: white;
+  }
+
+  /* Header */
+  .print-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #000;
+  }
+
+  .print-header h1 {
+    font-size: 24px;
+    font-weight: bold;
+    margin: 0;
+    line-height: 1.2;
+  }
+
+  .print-header p {
+    font-size: 14px;
+    margin: 5px 0 0 0;
+    color: #666;
+  }
+
+  .print-date {
+    font-size: 11px;
+    color: #666;
+    text-align: right;
+  }
+
+  /* Sections */
+  .print-section {
+    margin-bottom: 25px;
+    page-break-inside: avoid;
+  }
+
+  .print-section-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #ccc;
+  }
+
+  /* Tables */
+  .print-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .print-table td {
+    padding: 6px 10px;
+    vertical-align: top;
+  }
+
+  .print-label {
+    width: 30%;
+    font-weight: 600;
+    color: #444;
+  }
+
+  .print-value {
+    width: 70%;
+    color: #000;
+  }
+
+  /* Bordered Tables */
+  .print-table-bordered {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+
+  .print-table-bordered th,
+  .print-table-bordered td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: left;
+    font-size: 12px;
+  }
+
+  .print-table-bordered th {
+    background-color: #f3f4f6;
+    font-weight: bold;
+  }
+
+  .print-table-bordered tbody tr:nth-child(even) {
+    background-color: #f9fafb;
+  }
+
+  /* Notes */
+  .print-note {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    page-break-inside: avoid;
+  }
+
+  .print-note-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 13px;
+  }
+
+  .print-note-text {
+    font-size: 12px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+  }
+
+  /* Footer */
+  .print-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 15px 20px;
+    border-top: 1px solid #ccc;
+    text-align: center;
+    font-size: 10px;
+    color: #666;
+    background: white;
+  }
+
+  .print-footer p {
+    margin: 3px 0;
+  }
+
+  /* Page breaks */
+  .page-break-before {
+    page-break-before: always;
+  }
+
+  .page-break-after {
+    page-break-after: always;
+  }
+
+  /* Remove shadows and transitions */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    transition: none !important;
+    animation: none !important;
+  }
+
+  /* Ensure good contrast */
+  a {
+    color: #000 !important;
+    text-decoration: underline;
+  }
+
+  /* Page setup */
+  @page {
+    margin: 1cm;
+    size: A4;
+  }
+}

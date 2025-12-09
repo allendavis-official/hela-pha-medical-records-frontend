@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { withAuth } from "../../../lib/auth";
@@ -6,6 +6,8 @@ import Layout from "../../../components/layout/Layout";
 import ImageModal from "../../../components/common/ImageModal";
 import useSWR from "swr";
 import api from "../../../lib/api";
+import PrintButton from "../../../components/common/PrintButton";
+import PrintablePatientDetails from "../../../components/print/PrintablePatientDetails";
 import {
   FaEdit,
   FaPlus,
@@ -18,11 +20,13 @@ import {
   FaUserFriends,
 } from "react-icons/fa";
 import { format } from "date-fns";
+import { useReactToPrint } from "react-to-print";
 
 function PatientDetailsPage() {
   const router = useRouter();
   const { id } = router.query;
   const [showImageModal, setShowImageModal] = useState(false);
+  const printRef = useRef();
 
   const { data, error } = useSWR(id ? `/patients/${id}` : null, () =>
     api.getPatientById(id)
@@ -54,6 +58,12 @@ function PatientDetailsPage() {
 
   const patient = data.data;
   const latestVitals = vitalsData?.data;
+
+  // ADD THIS: Create the print handler
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: `Patient_${data?.data?.mrn || "Record"}`,
+  });
 
   const age = patient.dateOfBirth
     ? new Date().getFullYear() - new Date(patient.dateOfBirth).getFullYear()
@@ -113,6 +123,7 @@ function PatientDetailsPage() {
           </div>
 
           <div className="flex space-x-3">
+            <PrintButton onClick={handlePrint} buttonText="Print" />
             <Link
               href={`/encounters/new?patientId=${patient.id}`}
               className="btn btn-success"
@@ -418,6 +429,14 @@ function PatientDetailsPage() {
           name={`${patient.firstName} ${patient.lastName}`}
         />
       )}
+      {/* ADD HIDDEN PRINTABLE COMPONENT */}
+      <div style={{ display: "none" }}>
+        <PrintablePatientDetails
+          ref={printRef}
+          patient={patient}
+          vitals={latestVitals}
+        />
+      </div>
     </Layout>
   );
 }

@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { withAuth } from "../../../lib/auth";
 import Layout from "../../../components/layout/Layout";
+import PrintButton from "../../../components/common/PrintButton";
+import PrintableEncounter from "../../../components/print/PrintableEncounter";
 import useSWR from "swr";
 import api from "../../../lib/api";
 import {
@@ -17,6 +19,7 @@ import {
   FaHospital,
 } from "react-icons/fa";
 import { format } from "date-fns";
+import { useReactToPrint } from "react-to-print";
 
 function EncounterDetailsPage() {
   const router = useRouter();
@@ -28,6 +31,7 @@ function EncounterDetailsPage() {
   });
   const [closing, setClosing] = useState(false);
   const [error, setError] = useState("");
+  const printRef = useRef();
 
   const {
     data,
@@ -56,6 +60,12 @@ function EncounterDetailsPage() {
 
   const encounter = data.data;
   const patient = encounter.patient;
+
+  // ADD THIS: Create the print handler
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: `Encounter_${data?.data?.patient?.mrn || "Summary"}`,
+  });
 
   const handleCloseEncounter = async () => {
     if (!closeData.outcome) {
@@ -103,6 +113,7 @@ function EncounterDetailsPage() {
             </p>
           </div>
           <div className="flex space-x-3">
+            <PrintButton onClick={handlePrint} buttonText="Print Summary" />
             {encounter.status === "open" && (
               <>
                 <Link
@@ -513,6 +524,10 @@ function EncounterDetailsPage() {
           </div>
         </div>
       )}
+      {/* ADD HIDDEN PRINTABLE COMPONENT */}
+      <div style={{ display: "none" }}>
+        <PrintableEncounter ref={printRef} encounter={encounter} />
+      </div>
     </Layout>
   );
 }
