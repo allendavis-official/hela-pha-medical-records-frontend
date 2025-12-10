@@ -33,12 +33,25 @@ function EncounterDetailsPage() {
   const [error, setError] = useState("");
   const printRef = useRef();
 
+  // FETCH DATA FIRST (HOOK #1)
   const {
     data,
     error: fetchError,
     mutate,
   } = useSWR(id ? `/encounters/${id}` : null, () => api.getEncounterById(id));
 
+  // CREATE PRINT HANDLER (HOOK #2) - MUST BE BEFORE EARLY RETURNS
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: data?.data
+      ? `Encounter_${data.data.patient.mrn}_${format(
+          new Date(data.data.admissionDate),
+          "yyyy-MM-dd"
+        )}`
+      : "Encounter_Summary",
+  });
+
+  // NOW EARLY RETURNS ARE SAFE (ALL HOOKS CALLED)
   if (fetchError) {
     return (
       <Layout>
@@ -60,12 +73,6 @@ function EncounterDetailsPage() {
 
   const encounter = data.data;
   const patient = encounter.patient;
-
-  // ADD THIS: Create the print handler
-  const handlePrint = useReactToPrint({
-    contentRef: printRef,
-    documentTitle: `Encounter_${data?.data?.patient?.mrn || "Summary"}`,
-  });
 
   const handleCloseEncounter = async () => {
     if (!closeData.outcome) {
@@ -524,7 +531,7 @@ function EncounterDetailsPage() {
           </div>
         </div>
       )}
-      {/* ADD HIDDEN PRINTABLE COMPONENT */}
+      {/* Hidden Printable Component */}
       <div style={{ display: "none" }}>
         <PrintableEncounter ref={printRef} encounter={encounter} />
       </div>

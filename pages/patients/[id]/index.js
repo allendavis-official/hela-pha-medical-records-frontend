@@ -28,15 +28,32 @@ function PatientDetailsPage() {
   const [showImageModal, setShowImageModal] = useState(false);
   const printRef = useRef();
 
+  // FETCH DATA FIRST (HOOK #1 & #2)
   const { data, error } = useSWR(id ? `/patients/${id}` : null, () =>
     api.getPatientById(id)
   );
 
-  const { data: vitalsData } = useSWR(
+  const { data: vitalsData, error: vitalsError } = useSWR(
     id ? `/clinical-notes/patient/${id}/latest-vitals` : null,
-    () => api.getLatestVitals(id)
+    () => api.getLatestVitals(id),
+    {
+      shouldRetryOnError: false,
+      onError: (error) => {
+        // Silently handle permission errors
+        console.log("Vitals not available:", error.message);
+      },
+    }
   );
 
+  // CREATE PRINT HANDLER (HOOK #3) - MUST BE BEFORE EARLY RETURNS
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: data?.data?.mrn
+      ? `Patient_${data.data.mrn}_${data.data.firstName}_${data.data.lastName}`
+      : "Patient_Record",
+  });
+
+  // NOW EARLY RETURNS ARE SAFE (ALL HOOKS CALLED)
   if (error) {
     return (
       <Layout>
@@ -57,13 +74,7 @@ function PatientDetailsPage() {
   }
 
   const patient = data.data;
-  const latestVitals = vitalsData?.data;
-
-  // ADD THIS: Create the print handler
-  const handlePrint = useReactToPrint({
-    contentRef: printRef,
-    documentTitle: `Patient_${data?.data?.mrn || "Record"}`,
-  });
+  const latestVitals = vitalsError ? null : vitalsData?.data;
 
   const age = patient.dateOfBirth
     ? new Date().getFullYear() - new Date(patient.dateOfBirth).getFullYear()
@@ -429,7 +440,7 @@ function PatientDetailsPage() {
           name={`${patient.firstName} ${patient.lastName}`}
         />
       )}
-      {/* ADD HIDDEN PRINTABLE COMPONENT */}
+      {/* Hidden Printable Component */}
       <div style={{ display: "none" }}>
         <PrintablePatientDetails
           ref={printRef}
